@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ระบบคุมคลิป</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f6f5f1;--fg:#1d2a22;--mut:#6b756e;--card:#fff;--line:#dedbd2;--acc:#2f7d4f;--accfg:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14201a;--fg:#e8efe9;--mut:#93a097;--card:#1c2b23;--line:#2d4036;--acc:#5fbf86;--accfg:#10231a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14201a;--fg:#e8efe9;--mut:#93a097;--card:#1c2b23;--line:#2d4036;--acc:#5fbf86;--accfg:#10231a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 "Noto Sans Thai",system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:4px 0 10px;display:flex;justify-content:space-between;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--mut)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+select,input,textarea,button{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;max-width:100%}
+textarea{width:100%;resize:vertical}
+button{cursor:pointer}button.p{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.panel[hidden]{display:none}
+.f{display:grid;grid-template-columns:1fr 1fr;gap:8px}.f .w{grid-column:1/-1}
+label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:3px}
+label select,label input{color:var(--fg);font-size:14px}
+h2{font-size:14px;margin:16px 0 6px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:6px}
+.tag{font-size:12px;color:var(--mut);white-space:nowrap}
+video{width:100%;max-height:320px;background:#000;border-radius:10px;margin:4px 0}
+.card .f{margin-top:6px}.acts{display:flex;gap:8px;margin-top:8px}.acts button{font-size:13px;padding:5px 10px}
+.empty{color:var(--mut);text-align:center;padding:24px 8px}
+a{color:var(--acc)}
+</style></head><body><main id="app">
+<h1>🎬 ระบบคุมคลิป <span><button id="gear" title="ตั้งค่า">⚙️</button> <button id="out">ออก</button></span></h1>
+<div class="panel" id="login" hidden><b>เข้าสู่ระบบทีมงาน</b>
+<div class="f" style="margin-top:8px"><label class="w">อีเมล<input id="l_mail" type="email" autocomplete="username"></label><label class="w">รหัสผ่าน<input id="l_pw" type="password" autocomplete="current-password"></label></div>
+<div class="acts"><button class="p" id="l_go">เข้าสู่ระบบ</button><span id="l_msg" class="tag"></span></div></div>
+<div id="work" hidden>
+<div class="stats"><div class="stat"><b id="s1">0</b><span>โพสต์วันนี้</span></div><div class="stat"><b id="s2">0</b><span>รอตรวจ/ต้องแก้</span></div><div class="stat"><b id="s3">0</b><span>เลยกำหนด</span></div></div>
+
+<div class="panel" id="cfgp" hidden>
+<div class="f"><label class="w">บัญชี (คั่นด้วย , )<input id="c_acc"></label><label>แพลตฟอร์ม<input id="c_plat"></label><label>ผู้รับผิดชอบ<input id="c_ppl"></label></div>
+<div class="acts"><button class="p" id="c_save">บันทึกตั้งค่า</button></div></div>
+
+<div class="panel"><b>เพิ่มคลิปใหม่</b>
+<div class="f" style="margin-top:8px">
+<label class="w">ชื่องาน<input id="a_title" placeholder="เช่น tote-intro"></label>
+<label>วันที่โพสต์<input id="a_date" type="date"></label>
+<label>บัญชี<select id="a_acc"></select></label>
+<label>แพลตฟอร์ม<select id="a_plat"></select></label>
+<label>ผู้รับผิดชอบ<select id="a_ppl"></select></label>
+<label class="w">ลิงก์ไฟล์วิดีโอ (Google Drive ฯลฯ)<input id="a_link" placeholder="https://"></label>
+<label class="w">แคปชัน<textarea id="a_cap" rows="2"></textarea></label></div>
+<div class="acts"><button class="p" id="a_go">เพิ่มคลิป</button><span id="a_msg" class="tag"></span></div></div>
+
+<div class="bar"><select id="f_acc"></select><select id="f_st"></select>
+<select id="f_rng"><option value="7">7 วันข้างหน้า</option><option value="today">วันนี้</option><option value="late">เลยกำหนด</option><option value="all">ทั้งหมด</option></select></div>
+<div id="list"><p class="empty">กำลังโหลด…</p></div>
+</div></main>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ds=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const STAT=[['รอทำ','#8a8f98'],['กำลังตัดต่อ','#e0a100'],['รอตรวจ','#3b82f6'],['ต้องแก้','#ef4444'],['อนุมัติ','#14b8a6'],['ตั้งเวลาแล้ว','#8b5cf6'],['โพสต์แล้ว','#22c55e']];
+const DONE='โพสต์แล้ว';
+let cfg={accounts:['บัญชี A','บัญชี B','บัญชี C'],platforms:['TikTok','Reels','Shorts'],people:['ทีมตัดต่อ 1','ทีมตัดต่อ 2']};
+let clips=[],db=null,assets=null,loaded=false,pending=false;
+const opt=(arr,sel,blank)=>(blank!=null?'<option value="">'+blank+'</option>':'')+arr.map(v=>'<option'+(v===sel?' selected':'')+'>'+esc(v)+'</option>').join('');
+function fill(){
+  const keep=id=>$(id).value;
+  const v={fa:keep('#f_acc'),fs:keep('#f_st'),aa:keep('#a_acc'),ap:keep('#a_plat'),ar:keep('#a_ppl')};
+  $('#f_acc').innerHTML=opt(cfg.accounts,v.fa,'ทุกบัญชี');
+  $('#f_st').innerHTML=opt(STAT.map(s=>s[0]),v.fs,'ทุกสถานะ');
+  $('#a_acc').innerHTML=opt(cfg.accounts,v.aa);
+  $('#a_plat').innerHTML=opt(cfg.platforms,v.ap);
+  $('#a_ppl').innerHTML=opt(cfg.people,v.ar,'ยังไม่ระบุ');
+  $('#c_acc').value=cfg.accounts.join(', ');$('#c_plat').value=cfg.platforms.join(', ');$('#c_ppl').value=cfg.people.join(', ');
+}
+function card(c){
+  const col=(STAT.find(s=>s[0]===c.status)||STAT[0])[1];
+  const src=c.assetId?'/_blob/'+c.assetId:'';
+  const link=/^https?:\/\//.test(c.link||'')?'<a href="'+esc(c.link)+'" target="_blank" rel="noopener">เปิดลิงก์ไฟล์</a>':'';
+  const fn=((c.date||'').replace(/-/g,'')+'_'+(c.account||'')+'_'+(c.title||'')).replace(/\s+/g,'-');
+  return '<article class="card" style="border-left:4px solid '+col+'" data-id="'+esc(c.id)+'" data-fn="'+esc(fn)+'">'
+  +'<div class="top"><b>'+esc(c.title||'ไม่มีชื่อ')+'</b><span class="tag">'+esc(c.platform||'')+' · '+esc(c.account||'')+'</span></div>'
+  +(src?'<video src="'+src+'" controls preload="metadata" playsinline></video>':'')+link
+  +'<div class="f"><label>สถานะ<select data-f="status">'+opt(STAT.map(s=>s[0]),c.status)+'</select></label>'
+  +'<label>วันที่โพสต์<input type="date" data-f="date" value="'+esc(c.date)+'"></label>'
+  +'<label>บัญชี<select data-f="account">'+opt(cfg.accounts,c.account)+'</select></label>'
+  +'<label>ผู้รับผิดชอบ<select data-f="assignee">'+opt(cfg.people,c.assignee,'ยังไม่ระบุ')+'</select></label>'
+  +'<label class="w">แคปชัน<textarea data-f="caption" rows="2">'+esc(c.caption)+'</textarea></label>'
+  +'<label class="w">หมายเหตุ/จุดที่ต้องแก้<textarea data-f="note" rows="2">'+esc(c.note)+'</textarea></label></div>'
+  +'<div class="acts"><button data-a="copy">คัดลอกชื่อไฟล์</button><button data-a="del">ลบ</button></div></article>';
+}
+function render(){
+  if(!loaded)return;
+  const ae=document.activeElement;
+  if(ae&&ae.closest&&ae.closest('#list')&&/TEXTAREA|INPUT/.test(ae.tagName)){pending=true;return}
+  pending=false;
+  const t=ds(new Date()),w=new Date();w.setDate(w.getDate()+7);const wk=ds(w);
+  const open=clips.filter(c=>c.status!==DONE);
+  $('#s1').textContent=open.filter(c=>c.date===t).length;
+  $('#s2').textContent=clips.filter(c=>c.status==='รอตรวจ'||c.status==='ต้องแก้').length;
+  $('#s3').textContent=open.filter(c=>c.date&&c.date<t).length;
+  const a=$('#f_acc').value,s=$('#f_st').value,r=$('#f_rng').value;
+  let L=clips.filter(c=>(!a||c.account===a)&&(!s||c.status===s)&&(r==='all'||(r==='today'&&c.date===t)||(r==='7'&&c.date>=t&&c.date<=wk)||(r==='late'&&c.status!==DONE&&c.date&&c.date<t)));
+  L.sort((x,y)=>(x.date||'9').localeCompare(y.date||'9')||(x.createdAt||0)-(y.createdAt||0));
+  if(!L.length){$('#list').innerHTML='<p class="empty">ยังไม่มีคลิปในช่วงนี้ — เพิ่มคลิปด้านบนได้เลย</p>';return}
+  let h='',cur='';
+  L.forEach(c=>{
+    if(c.date!==cur){cur=c.date;const d=c.date?new Date(c.date+'T00:00:00').toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'short'}):'ยังไม่กำหนดวัน';
+      const n=L.filter(x=>x.date===c.date).length;h+='<h2>'+d+(c.date===t?' (วันนี้)':'')+' · '+n+' คลิป</h2>'}
+    h+=card(c)});
+  $('#list').innerHTML=h;
+}
+const toast=m=>{$('#a_msg').textContent=m;setTimeout(()=>{if($('#a_msg').textContent===m)$('#a_msg').textContent=''},4000)};
+async function save(id,d){try{await db.doc('clips/'+id).update(d)}catch(e){toast('บันทึกไม่ได้: '+(e.code||'สิทธิ์ไม่พอ'))}}
+$('#list').addEventListener('change',e=>{const el=e.target,c=el.closest('[data-id]');if(c&&el.dataset.f)save(c.dataset.id,{[el.dataset.f]:el.value})});
+$('#list').addEventListener('focusout',()=>setTimeout(()=>{if(pending)render()},200));
+$('#list').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-a]');if(!b)return;const c=b.closest('[data-id]'),id=c.dataset.id;
+  if(b.dataset.a==='copy'){try{await navigator.clipboard.writeText(c.dataset.fn);b.textContent='คัดลอกแล้ว'}catch(x){b.textContent=c.dataset.fn}return}
+  if(b.dataset.a==='del'){
+    if(!b.dataset.sure){b.dataset.sure=1;b.textContent='กดอีกครั้งเพื่อลบ';setTimeout(()=>{b.dataset.sure='';b.textContent='ลบ'},3000);return}
+    const cl=clips.find(x=>x.id===id);
+    try{await db.doc('clips/'+id).delete();if(cl&&cl.assetId&&assets)assets.delete(cl.assetId).catch(()=>{})}catch(x){toast('ลบไม่ได้')}}
+});
+['#f_acc','#f_st','#f_rng'].forEach(i=>$(i).addEventListener('change',render));
+$('#gear').onclick=()=>{$('#cfgp').hidden=!$('#cfgp').hidden};
+const lst=v=>v.split(/[,\n]/).map(x=>x.trim()).filter(Boolean);
+$('#c_save').onclick=async()=>{
+  const n={accounts:lst($('#c_acc').value),platforms:lst($('#c_plat').value),people:lst($('#c_ppl').value)};
+  if(!n.accounts.length||!n.platforms.length){toast('ต้องมีอย่างน้อย 1 บัญชีและ 1 แพลตฟอร์ม');return}
+  try{await db.doc('config/main').set(n);cfg=n;fill();render();$('#cfgp').hidden=true}catch(e){toast('บันทึกตั้งค่าไม่ได้ (ต้องเป็นผู้แก้ไข)')}};
+$('#a_date').value=ds(new Date());
+$('#a_go').onclick=async()=>{
+  if(!db){return}
+  const title=$('#a_title').value.trim();if(!title){toast('ใส่ชื่องานก่อน');return}
+  const f=null;let assetId='';
+  try{
+    if(f){
+      if(!assets){toast('บัญชีนี้อัปโหลดไฟล์ไม่ได้ ใช้ลิงก์แทน');return}
+      if(f.size>20*1024*1024){toast('ไฟล์เกิน 20 MB');return}
+      $('#a_go').disabled=true;toast('กำลังอัปโหลด…');assetId=(await assets.upload(f)).id}
+    const id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    await db.doc('clips/'+id).set({title,date:$('#a_date').value,account:$('#a_acc').value,platform:$('#a_plat').value,assignee:$('#a_ppl').value,caption:$('#a_cap').value,note:'',status:'รอทำ',assetId,link:$('#a_link').value.trim(),createdAt:Date.now()});
+    ['#a_title','#a_cap','#a_link'].forEach(i=>$(i).value='');toast('เพิ่มแล้ว ✓');
+  }catch(e){toast('เพิ่มไม่ได้: '+(e.code||e.message||'ผิดพลาด'))}
+  $('#a_go').disabled=false};
+fill();
+const SUPABASE_URL='https://YOUR-PROJECT.supabase.co',SUPABASE_KEY='YOUR-ANON-KEY';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let subs=[];const poke=()=>subs.forEach(f=>f());
+const mk=()=>({
+ doc(p){const[t,id]=p.split('/');
+  const get=async()=>{const r=await sb.from(t).select('data').eq('id',id).maybeSingle();if(r.error)throw r.error;return r.data?r.data.data:null};
+  const put=async d=>{const r=await sb.from(t).upsert({id,data:d});if(r.error)throw r.error;poke()};
+  return{set:put,async update(d){put(Object.assign((await get())||{},d))},
+   async delete(){const r=await sb.from(t).delete().eq('id',id);if(r.error)throw r.error;poke()},
+   onSnapshot(next,er){const run=async()=>{try{const d=await get();next({exists:!!d,data:()=>d})}catch(e){er&&er(e)}};subs.push(run);run()}}},
+ collection(t){return{onSnapshot(next,er){const run=async()=>{try{const r=await sb.from(t).select('id,data');if(r.error)throw r.error;next({docs:r.data.map(x=>({id:x.id,data:()=>x.data}))})}catch(e){er&&er(e)}};subs.push(run);run()}}}
+});
+setInterval(()=>{if(!document.hidden)poke()},15000);
+async function start(){
+  if(SUPABASE_URL.includes('YOUR-PROJECT')){$('#login').hidden=false;$('#l_msg').textContent='ยังไม่ได้ใส่ SUPABASE_URL / KEY ใน index.html';return}
+  const s=await sb.auth.getSession();
+  if(!s.data.session){$('#login').hidden=false;$('#work').hidden=true;return}
+  $('#login').hidden=true;$('#work').hidden=false;db=mk();
+  const tm=setTimeout(()=>{if(!loaded)$('#list').innerHTML='<p class="empty">โหลดนานกว่าปกติ ลองรีเฟรชหน้านี้</p>'},10000);
+  const er=e=>{$('#list').innerHTML='<p class="empty">โหลดข้อมูลไม่ได้: '+esc(e.message||e.code||'')+'</p>'};
+  db.doc('config/main').onSnapshot(x=>{if(x.exists)cfg=Object.assign(cfg,x.data());fill();render()},er);
+  db.collection('clips').onSnapshot(x=>{loaded=true;clearTimeout(tm);clips=x.docs.map(d=>Object.assign({id:d.id},d.data()));render()},er);
+}
+$('#l_go').onclick=async()=>{const r=await sb.auth.signInWithPassword({email:$('#l_mail').value.trim(),password:$('#l_pw').value});
+  if(r.error){$('#l_msg').textContent='เข้าไม่ได้: '+r.error.message;return}start()};
+$('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
+start();
+</script></body></html>
