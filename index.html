@@ -152,7 +152,7 @@ $('#a_go').onclick=async()=>{
   }catch(e){toast('เพิ่มไม่ได้: '+(e.code||e.message||'ผิดพลาด'))}
   $('#a_go').disabled=false};
 fill();
-const SUPABASE_URL='https://jpzlmhtkijflzrrmqcol.supabase.co/rest/v1/',SUPABASE_KEY='sb_publishable_-s_xQQvUQmMtvrTRFMnozg_EwoG2WSB';
+const SUPABASE_URL='https://jpzlmhtkijflzrrmqcol.supabase.co',SUPABASE_KEY='sb_publishable_-s_xQQvUQmMtvrTRFMnozg_EwoG2WSB';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let subs=[];const poke=()=>subs.forEach(f=>f());
 const mk=()=>({
